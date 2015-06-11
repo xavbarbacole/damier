@@ -1,0 +1,114 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>Damier pions al&eacute;atoires dans tableau </title>
+    <script language="JavaScript" src="./jquery-1.11.2.min.js"></script>
+    <script language="JavaScript" src="./function.js?v=2"></script>
+</head>
+<body>
+<table cellspacing="1" border="1" cellpadding="0" style="border-color:black;border-width: 20px;border-style:solid;bordercolor:#0123ff;width:100%;height:100%">
+    <tr style="height:10%">
+        <td >
+            <input type="button" id="ok" name="ok" value="A toi de jouer" tabindex='1' accesskey='1'>
+<!--             <input type="button" id="ok" name="ok" value="A toi de jouer" onClick="exemple8();">
+            <input type="button" id="arret" name="arret" value="Arreter" onClick="javascript:arretInterval();" tabindex='3' accesskey='3'>
+-->
+            <input type="button" id="arret" name="arret" value="Arreter" onClick="javascript:clearTimeout(cycle_auto);" tabindex='3' accesskey='3'>
+            Nb de pions <input type="text" id="nbvaleur" name="nbvaleur" id="nbvaleur" value="">
+            Nb resultat <input type="text" name="nbresultat" id="nbresultat">
+            Nb appel <input type="text" name="nbcall" id="nbcall">
+            N° plateau <input type="text" id="id_plateau" name="nbcall" id="nbcall" value="" tabindex='2' accesskey='2'>
+            Taille plateau <input type="text" id="id_plateau" name="nbcall" id="nbcall" value="" >
+        </td>
+    <tr>
+        <td >
+            <div id="state_bar" style="height:100%;">Cliquer sur le bouton pour débuter</div>
+        </td>
+    </tr>
+
+    </tr>
+    <tr style="height:90%">
+        <td >
+            <div id="contenu" style="height:100%;">Ici je vais afficher mon damier</div>
+        </td>
+    </tr>
+
+</table>
+<script>
+var cycle_auto= 0;
+var actu_in_progess = false;
+$(document).ready(function(){
+    var id_plateau = $('#id_plateau').val();
+    $("#ok").ajaxError(function(){
+       console.log("L'appel AJAX a échoué.");
+    });
+
+    $("#ok").click(function(){
+        // Si le chp plateau est vide on signale l'erreur
+        if ($('#id_plateau').val().length < 1)  {
+            $('#state_bar').html('').html('veuillez désigner le n° de plateau');
+            return false; // Sortie de la fonction, on ne va pas plus loin
+        } else if (id_plateau != $('#id_plateau').val()) { //charge le plateau
+//          console.log('op=plateau&id_plateau=' + $("#id_plateau").val()); 
+          $.ajax({
+             url : 'actu.php',
+             data : 'op=plateau&id_plateau=' + $("#id_plateau").val(),
+             dataType : 'json', // On désire recevoir du HTML
+             success : function(data){ // code_html contient le HTML renvoyé
+                  $("#contenu").html('').html(data.html);
+                  $("#nbvaleur").val(data.nbvaleur);
+                  $("#nbresultat").val(data.nbresultat);
+                  $('#state_bar').html('').html('votre plateau est chargé');
+                  id_plateau = $('#id_plateau').val();
+             },
+
+             error : function(resultat, statut, erreur){
+                  $("#state_bar").html('').html("ici Une erreur c'est produite pendant le chargement du plateau");
+             },
+
+             complete : function(resultat, statut){
+      // après le traitement via error ou succes fait la suite du programme, très peu utiliser
+             }
+          });
+          return true; // Sortie de la fonction, on a chargé le tableau 
+        } else if (id_plateau == $('#id_plateau').val()) { // les couleur des div
+          if (actu_in_progess !== true) {
+            actu_in_progess = true;  
+            cycle_auto = setInterval(function(){
+            $.ajax({
+               url : 'actu.php',
+               data : 'op=displaytableau&id_plateau=' + $("#id_plateau").val() + '&nbvaleur=' + $("#nbvaleur").val() + '&nbresultat='+$("#nbresultat").val(),
+               dataType : 'json', // On désire recevoir un tableau des case à changer
+               success : function(data){ // tableau des case à actualiser
+                    console.log(data);
+                    $.each(data, function(key,value){
+                        $("#" + key).css("background-color", value)    
+                    });
+                    $('#state_bar').html('').html('votre plateau est actualisé');
+                    id_plateau = $('#id_plateau').val();
+                    $("#nbresultat").val(($("#nbresultat").val())*1+1);
+                actu_in_progess = false;
+               },
+
+               error : function(resultat, statut, erreur){
+                    $("#state_bar").html('').html("Une erreur c'est produite pendant l'actualisation du plateau");
+               },
+
+               complete : function(resultat, statut){
+        // après le traitement via error ou succes fait la suite du programme, très peu utiliser
+                actu_in_progess = false;
+               }
+             });
+            }, 2000);
+          } else {
+            window.clearTimeout(cycle_auto);
+            window.clearInterval(cycle_auto);
+            alerte ("temps dépassé");
+          }
+        }
+    });
+});
+</script>
+
+</body>
+</html>
