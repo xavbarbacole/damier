@@ -37,6 +37,55 @@
 <script>
 var cycle_auto= 0;
 var actu_in_progess = false;
+// gestion de la surcharge ou non
+var cycle_auto_delay = 2000; //initialisation de l’interval
+var cycle_auto_count_ok = 0; //initialisation du nb d’actu réussi
+var cycle_auto_nb_success = 5; //initialisation du nb de succes necessaire
+var fonction_actu = function(){
+            if (actu_in_progess !== true) {
+              actu_in_progess = true;  
+              $.ajax({
+                 url : 'actu.php',
+                 data : 'op=displaytableau&id_plateau=' + $("#id_plateau").val() + '&nbvaleur=' + $("#nbvaleur").val() + '&nbresultat='+$("#nbresultat").val(),
+                 dataType : 'json', // On désire recevoir un tableau des case à changer
+                 success : function(data){ // tableau des case à actualiser
+                      console.log(data);
+                      $.each(data, function(key,value){
+                          $("#" + key).css("background-color", value)    
+                      });
+                      $('#state_bar').html('').html('votre plateau est actualisé');
+                      id_plateau = $('#id_plateau').val();
+                      $("#nbresultat").val(($("#nbresultat").val())*1+1);
+                      actu_in_progess = false;
+                      if ((cycle_auto_count_ok)== cycle_auto_nb_success) { // gestion de la surcharge ou non
+                        cycle_auto_count_ok = 0;
+                        cycle_auto_delay = cycle_auto_delay*0.75;
+                        window.clearTimeout(cycle_auto);
+                        cycle_auto = setInterval( fonction_actu , cycle_auto_delay);
+                      } else {
+                        cycle_auto_count_ok++;
+                      }
+                 },
+
+                 error : function(resultat, statut, erreur){
+                      $("#state_bar").html('').html("Une erreur c'est produite pendant l'actualisation du plateau");
+                 },
+                 complete : function(resultat, statut){
+                  // après le traitement via error ou succes fait la suite du programme, très peu utiliser
+                  actu_in_progess = false;
+                 }
+               })
+            } else {
+              // gestion de la surcharge ou non
+              if (cycle_auto_count_ok>0) { // evite de passer plusieurs dans un seul timer
+                cycle_auto_count_ok = 0;
+                cycle_auto_delay = cycle_auto_delay*4;
+                window.clearTimeout(cycle_auto);
+                cycle_auto = setInterval( fonction_actu , cycle_auto_delay);
+              }
+            }
+          }
+
 $(document).ready(function(){
     var id_plateau = $('#id_plateau').val();
     $("#ok").ajaxError(function(){
@@ -72,39 +121,7 @@ $(document).ready(function(){
           });
           return true; // Sortie de la fonction, on a chargé le tableau 
         } else if (id_plateau == $('#id_plateau').val()) { // les couleur des div
-          if (actu_in_progess !== true) {
-            actu_in_progess = true;  
-            cycle_auto = setInterval(function(){
-            $.ajax({
-               url : 'actu.php',
-               data : 'op=displaytableau&id_plateau=' + $("#id_plateau").val() + '&nbvaleur=' + $("#nbvaleur").val() + '&nbresultat='+$("#nbresultat").val(),
-               dataType : 'json', // On désire recevoir un tableau des case à changer
-               success : function(data){ // tableau des case à actualiser
-                    console.log(data);
-                    $.each(data, function(key,value){
-                        $("#" + key).css("background-color", value)    
-                    });
-                    $('#state_bar').html('').html('votre plateau est actualisé');
-                    id_plateau = $('#id_plateau').val();
-                    $("#nbresultat").val(($("#nbresultat").val())*1+1);
-                actu_in_progess = false;
-               },
-
-               error : function(resultat, statut, erreur){
-                    $("#state_bar").html('').html("Une erreur c'est produite pendant l'actualisation du plateau");
-               },
-
-               complete : function(resultat, statut){
-        // après le traitement via error ou succes fait la suite du programme, très peu utiliser
-                actu_in_progess = false;
-               }
-             });
-            }, 2000);
-          } else {
-            window.clearTimeout(cycle_auto);
-            window.clearInterval(cycle_auto);
-            alerte ("temps dépassé");
-          }
+          cycle_auto = setInterval( fonction_actu , cycle_auto_delay);
         }
     });
 });
