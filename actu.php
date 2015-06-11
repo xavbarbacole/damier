@@ -191,6 +191,60 @@ if (isset($op)) {
         }
             break;
 
+        case 'displaystat':
+              // suppression d'un contenu precedent
+            while (@ob_end_clean()) ;
+            header('Content-type: text/html; charset=UTF-8');
+            ob_start();
+
+            // récupération des variables en get et post
+            if (isset($_GET["nbvaleur"])) $nbvaleur = $_GET["nbvaleur"];
+            if (isset($_POST["nbvaleur"])) $nbvaleur = $_POST["nbvaleur"];
+            if (isset($_GET["id_plateau"])) $id_plateau = $_GET["id_plateau"];
+            if (isset($_POST["id_plateau"])) $id_plateau = $_POST["id_plateau"];
+            if (isset($_GET["nbresultat"])) $nbresultat = $_GET["nbresultat"];
+            if (isset($_POST["nbresultat"])) $nbresultat = $_POST["nbresultat"];
+            //$nbresultat = $nbresultat + 1;
+            // les x cases modifier
+            $alldata = array();
+            $cond = array();
+            $val = array();
+    try
+    {   // PDO et la traque des erreurs dans le code sql avec array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+        $bdd = new PDO('mysql:host=localhost;dbname=damier_hist;charset=utf8', 'root', '', array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+    }
+    catch (Exception $e)
+    {
+            die('Erreur : ' . $e->getMessage());
+    }
+            $id_joueur=1;
+            $id_session=1;
+
+                $req = $bdd->prepare('SELECT x, y, nb_solicit from matrice WHERE id_plateau = :id_plateau ORDER BY nb_solicit DESC');
+                $req->bindParam(':id_plateau',$id_plateau, PDO::PARAM_INT);
+                $req->execute(); // $req->execute(array(':id_plateau'=>$id_plateau));
+                $matrice = array();
+                $max = 0;
+                while ($data = $req->fetch()){
+                    if ($max == 0) {
+                        $max = $data['nb_solicit'];
+                        $scale = 255*2/$max;
+                    }
+                    $color = round($data['nb_solicit']*$scale); // entre 0 et 510
+                    $B = 255 + (-1)*min(255,$color);
+                    $R = ($color)+$B -255;
+                    $matrice[$data['x'].'_'.$data['y']]="#".substr("0".dechex($R),-2).'FF'.substr("0".dechex($B),-2);
+                }
+                $req->closeCursor(); 
+            unset($req);
+            unset($data);
+//          $bdd->close;
+                echo json_encode($matrice);
+
+
+            die();
+
+          break;
         case 'buildSampleJson':
             ob_end_clean();
 

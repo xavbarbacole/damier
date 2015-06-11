@@ -18,8 +18,10 @@
             Nb resultat <input type="text" name="nbresultat" id="nbresultat">
             Nb appel <input type="text" name="nbcall" id="nbcall">
             N° plateau <input type="text" id="id_plateau" name="nbcall" id="nbcall" value="" tabindex='2' accesskey='2'>
-            Taille plateau <input type="text" id="id_plateau" name="nbcall" id="nbcall" value="" >
-        </td>
+            <input type="radio" name="play" id="play_on" value="play" checked>Jouer &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="play" id="stat_on" value="stat">Afficher les stats
+<!--             Taille plateau <input type="text" id="id_plateau" name="nbcall" id="nbcall" value="" >
+ -->        </td>
     <tr>
         <td >
             <div id="state_bar" style="height:100%;">Cliquer sur le bouton pour débuter</div>
@@ -91,7 +93,7 @@ $(document).ready(function(){
     $("#ok").ajaxError(function(){
        console.log("L'appel AJAX a échoué.");
     });
-
+console.log($('#stat_on').val());
     $("#ok").click(function(){
         // Si le chp plateau est vide on signale l'erreur
         if ($('#id_plateau').val().length < 1)  {
@@ -120,6 +122,30 @@ $(document).ready(function(){
              }
           });
           return true; // Sortie de la fonction, on a chargé le tableau 
+        } else if ($( "input:radio[name=play]:checked" ).val() == 'stat') { //affiche les stats
+          $.ajax({
+             url : 'actu.php',
+             data : 'op=displaystat&id_plateau=' + $("#id_plateau").val()+'&play='+$('#stat_on').val(),
+             dataType : 'json', // On désire recevoir du HTML
+             success : function(data){ // code_html contient le HTML renvoyé
+                  console.log(data);
+                  $.each(data, function(key,value){
+                      $("#" + key).css("background-color", value)    
+                  });
+                  $('#state_bar').html('').html('Satisitque : sollicitations des cases');
+                  id_plateau = $('#id_plateau').val();
+             },
+
+             error : function(resultat, statut, erreur){
+                  $("#state_bar").html('').html("ici Une erreur c'est produite pendant l'affichage des statisqiues");
+             },
+
+             complete : function(resultat, statut){
+      // après le traitement via error ou succes fait la suite du programme, très peu utiliser
+             }
+          });
+          return true; // Sortie de la fonction, on a chargé le tableau 
+
         } else if (id_plateau == $('#id_plateau').val()) { // les couleur des div
           cycle_auto = setInterval( fonction_actu , cycle_auto_delay);
         }
